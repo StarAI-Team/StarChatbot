@@ -9,6 +9,7 @@ import os, PyPDF2
 from flask import send_from_directory
 from werkzeug.utils import secure_filename
 import google.generativeai as genai
+from waitress import serve
 
 load_dotenv()
 # Initialize the Flask application
@@ -136,7 +137,7 @@ class GoogleSheetUpdater:
 
 
 # Usage
-SERVICE_ACCOUNT_FILE = './star-chatbot-admin-ff7178990f12.json'
+SERVICE_ACCOUNT_FILE = './star-chatbot-admin-23fcc20045c7.json'
 DOCUMENT_ID = '154VvsJcn7ZKE7mqPEIP1T-JIJbEzw4IyEExPZesa2Gc'
 
 updater = GoogleSheetUpdater(SERVICE_ACCOUNT_FILE, DOCUMENT_ID)
@@ -318,4 +319,5 @@ def update_logs():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True, host="0.0.0.0", port=3000)
+    #app.run(debug=True, port=3000)
+    serve(app,host="0.0.0.0",port=8000)
