@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet"> <!-- Font Awesome -->
+
+    <style>
+        /* Make the left panel span the entire height of the page */
+        .sidebar {
+            position: fixed;
+            height: 100vh; /* Ensure the sidebar spans the full height of the viewport */
+            width: 15%; /* Adjust this width as needed */
+            background-color: #0056b3;
+            color: white; 
+            padding-top: 20px;
+            overflow-y: auto; /* Enable scrolling if content overflows */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Grouped navigation items positioned towards the bottom */
+        .nav-items {
+            margin-top: 50%;
+        }
+
+        /* Logout positioned at the bottom */
+        .logout-item {
+            margin-bottom: 10%;
+        }
+
+        /* Ensure main content is offset by the width of the sidebar */
+        .main-content {
+            margin-left: 15%; /* This should match the sidebar width */
+            padding: 20px;
+        }
+
+        /* Style the links in the sidebar */
+        .sidebar .nav-link {    
+            color: white;
+        }
+
+        /* Style for active links in the sidebar */
+        .sidebar .nav-link.active {
+            background-color: #003d80;
+        }
+
+        /* Add some spacing between the icon and text */
+        .sidebar .nav-link .fas, .sidebar .nav-link .fa-chart-bar {
+            margin-right: 8px;
+        }
+
+        /* Container for the table with fixed height */
+        .table-container {
+            height: 700px; /* Adjust height as needed */
+            overflow-y: scroll; /* Enable scrolling within the table */
+            margin-bottom: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+
+        /* Minimize table row height */
+        .table tbody tr {
+            height: 45px; /* Set row height */
+            line-height: 1.2; /* Reduce line height to minimize row spacing */
+        }
+
+        /* Minimize padding inside table cells */
+        .table th, .table td {
+            padding: 4px 8px; /* Adjust padding as needed */
+            vertical-align: middle; /* Align content vertically in the middle */
+            max-height: 40px;
+        }
+
+        /* Apply text truncation with ellipsis */
+        .table td {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 150px; /* Adjust width as needed */
+        }
+        thead th {
+            position: sticky;
+            top: 0;
+            background-color: white; /* Ensure the background color matches your design */
+            z-index: 2; /* Keep the header on top of other elements */
+            box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.4); /* Optional: Add a subtle shadow for visual distinction */
+        }
+
+        /* Tooltip style */
+        .table td:hover {
+            overflow: visible;
+            white-space: normal; /* Shows full text on hover */
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Left-hand panel -->
+            <div class="col-md-2 bg-blue sidebar">
+                <!-- Space between content is managed by flexbox -->
+                <ul class="nav flex-column nav-items">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">
+                            <i class="fas fa-phone"></i> Call Logs <!-- Updated log item -->
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('index') }}">
+                            <i class="fas fa-comments"></i> Whatsapp Logs <!-- Updated statistics item -->
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('upload_loads') }}">
+                            <i class="fas fa-upload"></i> Upload Loads <!-- New upload item -->
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- Logout positioned at the bottom -->
+                <ul class="nav flex-column logout-item">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('logout') }}">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Main content -->
+            <div class="col-md-10 main-content">
+                <h2>Dashboard</h2>
+                <form id="updateForm" action="{{ url_for('send_update') }}" method="POST">
+                    <div class="table-container">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th style="width: 25%;">Summary</th>
+                                    <th style="width: 25%;">Transcript</th>
+                                    <th style="width: 15%;">Recording URL</th>
+                                    <th style="width: 5%;">Call ID</th>
+                                    <th style="width: 10%;">Call Start Time</th>
+                                    <th style="width: 10%;">Call End Time</th>
+                                    <th style="width: 5%;">Call Cost</th>
+                                    <th style="width: 15%;">Phone Number</th>
+                                    <th style="width: 10%;">Suggestions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="call-logs-table-body">
+                                <!-- Rows will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="submitUpdates()">Update</button>
+                </form>
+                
+                {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <div class="alert alert-danger mt-3">
+                    {{ messages[0] }}
+                    </div>
+                {% endif %}
+                {% endwith %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let data = [];
+        const updatedRows = {};
+
+        // Fetch data and populate the table
+        fetch('/fetch_data')
+            .then(response => response.json())
+            .then(fetchedData => {
+                data = fetchedData;
+                renderTable();
+            })
+            .catch(error => console.error('Error fetching data:', error));
+
+        // Function to render table without pagination
+        function renderTable() {
+            const tableBody = document.getElementById('call-logs-table-body');
+            tableBody.innerHTML = '';
+
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td title="${row['Summary']}">${row['Summary']}</td>
+                    <td><a href="/transcript/${row['Call ID']}" target="_blank" title="Click to view transcript">View Transcript</a></td>
+                    <td><a href="${row['Recording URL']}" target="_blank" title="Click to open recording">Recording</a></td>
+                    <td title="${row['Call ID']}">${row['Call ID']}</td>
+                    <td title="${new Date(row['Call Start time']).toLocaleString()}">${new Date(row['Call Start time']).toLocaleString()}</td>
+                    <td title="${new Date(row['Call End Time']).toLocaleString()}">${new Date(row['Call End Time']).toLocaleString()}</td>
+                    <td title="${row['Call Cost']}">${row['Call Cost']}</td>
+                    <td title="${row['Phone Number']}">${row['Phone Number']}</td>
+                    <td>
+                        <input type="text" class="form-control" value="${row['Suggestions']}" 
+                        oninput="markRowUpdated('${row['Call ID']}', this.value)">
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        // Mark a row as updated
+        function markRowUpdated(callId, newValue) {
+            updatedRows[String(callId)] = newValue.trim();
+            console.log('Updated Rows:', updatedRows);
+        }
+
+        // Submit updates to the server
+        function submitUpdates() {
+            console.log('Submitting Updates:', updatedRows);
+            if (Object.keys(updatedRows).length === 0) {
+                alert('No changes to update.');
+                return;
+            }
+
+            fetch('/send_update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(updatedRows),
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Updates submitted successfully!');
+                } else {
+                    alert('Failed to submit updates.');
+                }
+            })
+            .catch(error => console.error('Error submitting updates:', error));
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PyScript Dashboard</title>
+    <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css">
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Caller Dashboard</h1>
+
+    <!-- Placeholder for the Data -->
+    <div id="data-table"></div>
+
+    <py-script>
+        from js import document
+
+        def render_table():
+            # Sample data
+            data = [
+                {'ID': 1, 'Caller Name': 'Alice', 'Call Time': '10:00 AM', 'Summary': 'Inquiry about service'},
+                {'ID': 2, 'Caller Name': 'Bob', 'Call Time': '11:15 AM', 'Summary': 'Complaint'},
+                {'ID': 3, 'Caller Name': 'Charlie', 'Call Time': '02:30 PM', 'Summary': 'Follow-up call'}
+            ]
+
+            # Start building the HTML table
+            html_table = "<table>"
+            html_table += "<tr><th>ID</th><th>Caller Name</th><th>Call Time</th><th>Summary</th></tr>"
+
+            # Add rows to the table
+            for row in data:
+                html_table += "<tr>"
+                html_table += "<td>" + str(row['ID']) + "</td>"
+                html_table += "<td>" + row['Caller Name'] + "</td>"
+                html_table += "<td>" + row['Call Time'] + "</td>"
+                html_table += "<td>" + row['Summary'] + "</td>"
+                html_table += "</tr>"
+
+            html_table += "</table>"
+
+            # Insert the HTML table into the DOM
+            document.getElementById("data-table").innerHTML = html_table
+
+        render_table()  # Call the function to render the table
+    </py-script>
+
+    <script src="https://pyscript.net/alpha/pyscript.js"></script>
+</body>
+</html>
